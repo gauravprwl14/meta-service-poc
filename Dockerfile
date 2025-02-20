@@ -7,11 +7,14 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install ALL dependencies (including dev dependencies)
+RUN npm install --include=dev
 
 # Copy app source code
 COPY . .
+
+# Set execute permissions for scripts
+RUN chmod +x ./scripts/*.sh
 
 # Expose port
 EXPOSE 5000

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Node.js application
   app:
@@ -14,10 +12,8 @@ services:
       - MONGODB_URI=mongodb://mongodb:27017/todo-app
     volumes:
       - .:/usr/src/app
-      - /usr/src/app/node_modules
-    command: >
-      sh -c "chmod +x ./scripts/*.sh &&
-             npm run dev"
+      - node_modules:/usr/src/app/node_modules
+    command: npm run dev
     depends_on:
       - mongodb
 
@@ -34,3 +30,4 @@ services:
 volumes:
   mongodb_data:
     driver: local
+  node_modules:

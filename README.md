@@ -1,10 +1,11 @@
 # Todo API
 
-A RESTful API for managing todos built with Node.js, Express, and MongoDB.
+A RESTful API for managing todos and environments built with Node.js, Express, and MongoDB.
 
 ## Features
 
 - CRUD operations for todos
+- Environment setup and management
 - Status tracking (pending, in-progress, completed)
 - Priority levels (low, medium, high)
 - Due date management
@@ -12,6 +13,7 @@ A RESTful API for managing todos built with Node.js, Express, and MongoDB.
 - Docker support for easy deployment
 - Input validation
 - Error handling
+- API documentation with Swagger
 
 ## Tech Stack
 
@@ -21,14 +23,71 @@ A RESTful API for managing todos built with Node.js, Express, and MongoDB.
 - Mongoose
 - Docker
 - Docker Compose
+- Swagger
 
 ## Prerequisites
 
 - Docker
 - Docker Compose
 
-## Project Structure
+## Quick Start with Docker
 
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd todo-api
+```
+
+2. Start the application:
+```bash
+# Build and start containers
+docker-compose up --build -d
+
+# Check running containers
+docker ps
+
+# View logs
+docker-compose logs -f
+```
+
+3. Access the API:
+- API Endpoints: http://localhost:5000/api
+- API Documentation: http://localhost:5000/api-docs
+
+## API Endpoints
+
+### Todo Operations
+- `GET /api/todos` - Get all todos
+- `GET /api/todos/:id` - Get a specific todo
+- `POST /api/todos` - Create a new todo
+- `PATCH /api/todos/:id` - Update a todo
+- `DELETE /api/todos/:id` - Delete a todo
+- `GET /api/todos/status/:status` - Get todos by status
+- `GET /api/todos/priority/:priority` - Get todos by priority
+
+### Environment Operations
+- `POST /api/environment/setup` - Setup a new environment
+
+## Example Requests
+
+### Create Todo
+```bash
+curl -X POST http://localhost:5000/api/todos \
+-H "Content-Type: application/json" \
+-d '{
+    "title": "Complete project",
+    "description": "Finish the todo API project",
+    "status": "pending",
+    "priority": "high",
+    "dueDate": "2024-03-20T00:00:00.000Z"
+}'
+```
+
+### Setup Environment
+```bash
+curl -X POST http://localhost:5000/api/environment/setup \
+-H "Content-Type: application/json" \
+-d '{"envName": "development"}'
 ```
 
 ## Data Persistence

@@ -2,8 +2,50 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Todo = require('../models/Todo');
-const { exec } = require('child_process');
-const path = require('path');
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Todo:
+ *       type: object
+ *       required:
+ *         - title
+ *       properties:
+ *         title:
+ *           type: string
+ *           description: Title of the todo
+ *         description:
+ *           type: string
+ *           description: Detailed description of the todo
+ *         status:
+ *           type: string
+ *           enum: [pending, in-progress, completed]
+ *           default: pending
+ *         priority:
+ *           type: string
+ *           enum: [low, medium, high]
+ *           default: medium
+ *         dueDate:
+ *           type: string
+ *           format: date-time
+ */
+
+/**
+ * @swagger
+ * /api/todos:
+ *   get:
+ *     summary: Get all todos
+ *     responses:
+ *       200:
+ *         description: List of todos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Todo'
+ */
 
 // Validation middleware
 const todoValidation = [
@@ -117,72 +159,6 @@ router.get('/priority/:priority', async (req, res) => {
         res.json(todos);
     } catch (err) {
         res.status(500).json({ message: err.message });
-    }
-});
-
-// Utility function to execute shell commands
-const executeCommand = (command) => {
-    return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-            resolve({ stdout, stderr });
-        });
-    });
-};
-
-// Boot up new environment endpoint
-router.post('/environment/setup', [
-    body('envName')
-        .trim()
-        .notEmpty()
-        .withMessage('Environment name is required')
-        .matches(/^[a-zA-Z0-9-_]+$/)
-        .withMessage('Environment name can only contain letters, numbers, hyphens, and underscores')
-], async (req, res) => {
-    try {
-        // Validate request body
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { envName } = req.body;
-
-        // Use absolute path for scripts
-        const scriptsPath = path.join(__dirname, '../scripts');
-
-        // Execute plan command
-        const planCommand = `${scriptsPath}/plan.sh ${envName} app`;
-        const planResult = await executeCommand(planCommand);
-        console.log('Plan executed:', planResult.stdout);
-
-        // Execute apply command
-        const applyCommand = `${scriptsPath}/apply.sh ${envName} app`;
-        const applyResult = await executeCommand(applyCommand);
-        console.log('Apply executed:', applyResult.stdout);
-
-        // Ensure JSON response
-        res.setHeader('Content-Type', 'application/json');
-        res.status(200).json({
-            success: true,
-            message: 'Environment setup completed successfully',
-            environment: envName,
-            planOutput: planResult.stdout,
-            applyOutput: applyResult.stdout
-        });
-
-    } catch (error) {
-        console.error('Environment setup failed:', error);
-        // Ensure JSON response for errors
-        res.setHeader('Content-Type', 'application/json');
-        res.status(500).json({
-            success: false,
-            message: 'Environment setup failed',
-            error: error.message
-        });
     }
 });
 
