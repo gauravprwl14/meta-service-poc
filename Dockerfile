@@ -16,5 +16,5 @@ COPY . .
 # Expose port
 EXPOSE 5000
 
-# Start command
-CMD ["npm", "start"] 
+# Default command (will be overridden by docker-compose)
+CMD ["npm", "run", "dev"] 

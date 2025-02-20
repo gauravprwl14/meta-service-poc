@@ -13,6 +13,12 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
+// Force JSON responses
+app.use((req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+});
+
 // Database connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/todo-app', {
     useNewUrlParser: true,
@@ -27,7 +33,11 @@ app.use('/api/todos', todoRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
+    res.status(500).json({
+        success: false,
+        message: 'Something went wrong!',
+        error: err.message
+    });
 });
 
 const PORT = process.env.PORT || 5000;
