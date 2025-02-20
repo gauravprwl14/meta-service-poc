@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
-const util = require('util');
 
 /**
  * @swagger
@@ -67,34 +66,52 @@ const util = require('util');
  *         description: Server error
  */
 
-// Convert exec to promise and capture both stdout and stderr
-const execPromise = util.promisify(exec);
+// Utility function to execute shell commands with real-time streaming
+const executeCommandWithStream = (command, args, description) => {
+    return new Promise((resolve, reject) => {
+        console.log(`\n🚀 Starting ${description}:`, command, args.join(' '));
 
-// Utility function to execute shell commands with better logging
-const executeCommand = async (command, description) => {
-    console.log(`\n🚀 Executing ${description}:`, command);
+        const output = {
+            stdout: [],
+            stderr: []
+        };
 
-    try {
-        const { stdout, stderr } = await execPromise(command);
+        const process = spawn(command, args);
 
-        if (stdout) {
-            console.log(`\n✅ ${description} Output:`, stdout);
-        }
-
-        if (stderr) {
-            console.warn(`\n⚠️ ${description} Warnings:`, stderr);
-        }
-
-        return { stdout, stderr };
-    } catch (error) {
-        console.error(`\n❌ ${description} Error:`, {
-            message: error.message,
-            code: error.code,
-            stdout: error.stdout,
-            stderr: error.stderr
+        // Stream stdout in real-time
+        process.stdout.on('data', (data) => {
+            const message = data.toString();
+            output.stdout.push(message);
+            console.log(`\n✅ ${description} Output:`, message.trim());
         });
-        throw error;
-    }
+
+        // Stream stderr in real-time
+        process.stderr.on('data', (data) => {
+            const message = data.toString();
+            output.stderr.push(message);
+            console.warn(`\n⚠️ ${description} Warning:`, message.trim());
+        });
+
+        // Handle process completion
+        process.on('close', (code) => {
+            console.log(`\n🏁 ${description} completed with code:`, code);
+
+            if (code === 0) {
+                resolve({
+                    stdout: output.stdout.join(''),
+                    stderr: output.stderr.join('')
+                });
+            } else {
+                reject(new Error(`${description} failed with code ${code}`));
+            }
+        });
+
+        // Handle process errors
+        process.on('error', (error) => {
+            console.error(`\n❌ ${description} Error:`, error);
+            reject(error);
+        });
+    });
 };
 
 // Setup new environment
@@ -119,13 +136,19 @@ router.post('/setup', [
         const { envName } = req.body;
         const scriptsPath = path.join(__dirname, '../scripts');
 
-        // Execute plan command with logging
-        const planCommand = `${scriptsPath}/plan.sh ${envName} app`;
-        const planResult = await executeCommand(planCommand, 'Plan Phase');
+        // Execute plan command with streaming
+        const planResult = await executeCommandWithStream(
+            `${scriptsPath}/plan.sh`,
+            [envName, 'app'],
+            'Plan Phase'
+        );
 
-        // Execute apply command with logging
-        const applyCommand = `${scriptsPath}/apply.sh ${envName} app`;
-        const applyResult = await executeCommand(applyCommand, 'Apply Phase');
+        // Execute apply command with streaming
+        const applyResult = await executeCommandWithStream(
+            `${scriptsPath}/apply.sh`,
+            [envName, 'app'],
+            'Apply Phase'
+        );
 
         // Format the response
         const response = {
@@ -155,7 +178,6 @@ router.post('/setup', [
         // Log error details
         console.error('\n💥 Environment Setup Failed:', {
             error: error.message,
-            code: error.code,
             timestamp: new Date().toISOString()
         });
 
@@ -163,11 +185,6 @@ router.post('/setup', [
             success: false,
             message: 'Environment setup failed',
             error: error.message,
-            details: {
-                code: error.code,
-                stdout: error.stdout,
-                stderr: error.stderr
-            },
             timestamp: new Date().toISOString()
         });
     }
