@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { exec } = require('child_process');
 const path = require('path');
+const util = require('util');
 
 /**
  * @swagger
@@ -44,9 +45,21 @@ const path = require('path');
  *                   type: string
  *                 environment:
  *                   type: string
- *                 planOutput:
- *                   type: string
- *                 applyOutput:
+ *                 plan:
+ *                   type: object
+ *                   properties:
+ *                     output:
+ *                       type: string
+ *                     warnings:
+ *                       type: string
+ *                 apply:
+ *                   type: object
+ *                   properties:
+ *                     output:
+ *                       type: string
+ *                     warnings:
+ *                       type: string
+ *                 timestamp:
  *                   type: string
  *       400:
  *         description: Invalid input
@@ -54,17 +67,34 @@ const path = require('path');
  *         description: Server error
  */
 
-// Utility function to execute shell commands
-const executeCommand = (command) => {
-    return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-            resolve({ stdout, stderr });
+// Convert exec to promise and capture both stdout and stderr
+const execPromise = util.promisify(exec);
+
+// Utility function to execute shell commands with better logging
+const executeCommand = async (command, description) => {
+    console.log(`\n🚀 Executing ${description}:`, command);
+
+    try {
+        const { stdout, stderr } = await execPromise(command);
+
+        if (stdout) {
+            console.log(`\n✅ ${description} Output:`, stdout);
+        }
+
+        if (stderr) {
+            console.warn(`\n⚠️ ${description} Warnings:`, stderr);
+        }
+
+        return { stdout, stderr };
+    } catch (error) {
+        console.error(`\n❌ ${description} Error:`, {
+            message: error.message,
+            code: error.code,
+            stdout: error.stdout,
+            stderr: error.stderr
         });
-    });
+        throw error;
+    }
 };
 
 // Setup new environment
@@ -80,38 +110,65 @@ router.post('/setup', [
         // Validate request body
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
         }
 
         const { envName } = req.body;
-
-        // Use absolute path for scripts
         const scriptsPath = path.join(__dirname, '../scripts');
 
-        // Execute plan command
+        // Execute plan command with logging
         const planCommand = `${scriptsPath}/plan.sh ${envName} app`;
-        const planResult = await executeCommand(planCommand);
-        console.log('Plan executed:', planResult.stdout);
+        const planResult = await executeCommand(planCommand, 'Plan Phase');
 
-        // Execute apply command
+        // Execute apply command with logging
         const applyCommand = `${scriptsPath}/apply.sh ${envName} app`;
-        const applyResult = await executeCommand(applyCommand);
-        console.log('Apply executed:', applyResult.stdout);
+        const applyResult = await executeCommand(applyCommand, 'Apply Phase');
 
-        res.status(200).json({
+        // Format the response
+        const response = {
             success: true,
             message: 'Environment setup completed successfully',
             environment: envName,
-            planOutput: planResult.stdout,
-            applyOutput: applyResult.stdout
+            plan: {
+                output: planResult.stdout,
+                warnings: planResult.stderr || null
+            },
+            apply: {
+                output: applyResult.stdout,
+                warnings: applyResult.stderr || null
+            },
+            timestamp: new Date().toISOString()
+        };
+
+        // Log success
+        console.log('\n✨ Environment Setup Completed:', {
+            environment: envName,
+            timestamp: response.timestamp
         });
 
+        res.status(200).json(response);
+
     } catch (error) {
-        console.error('Environment setup failed:', error);
+        // Log error details
+        console.error('\n💥 Environment Setup Failed:', {
+            error: error.message,
+            code: error.code,
+            timestamp: new Date().toISOString()
+        });
+
         res.status(500).json({
             success: false,
             message: 'Environment setup failed',
-            error: error.message
+            error: error.message,
+            details: {
+                code: error.code,
+                stdout: error.stdout,
+                stderr: error.stderr
+            },
+            timestamp: new Date().toISOString()
         });
     }
 });

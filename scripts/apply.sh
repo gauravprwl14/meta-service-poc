@@ -9,10 +9,19 @@ fi
 ENV_NAME=$1
 APP_NAME=$2
 
-echo "Applying deployment for $APP_NAME in environment: $ENV_NAME"
+echo "Starting apply phase for environment: $ENV_NAME"
+echo "Application: $APP_NAME"
+echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "----------------------------------------"
 
 # Add your apply logic here
 # Example:
-# terraform apply -var="env_name=$ENV_NAME" -var="app_name=$APP_NAME" -auto-approve
+echo "1. Creating environment resources..."
+echo "2. Configuring services..."
+echo "3. Validating setup..."
+echo "✓ Environment setup completed"
+
+# Example warning
+echo "Warning: Using default security settings" >&2
 
 exit 0 
