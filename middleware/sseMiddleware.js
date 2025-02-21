@@ -1,9 +1,21 @@
 const setupSSE = (req, res, next) => {
-    // Set SSE headers
+    // Set SSE and CORS headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        res.status(204).end();
+        return;
+    }
 
     // Handle client disconnection
     req.on('close', () => {
@@ -21,7 +33,7 @@ const setupSSE = (req, res, next) => {
         if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify(data)}\n\n`);
 
-            // Try to flush if the method exists (depends on the Node.js environment)
+            // Try to flush if the method exists
             if (typeof res.flush === 'function') {
                 res.flush();
             }

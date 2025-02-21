@@ -67,19 +67,24 @@ const setupSSE = require('../middleware/sseMiddleware');
  *   post:
  *     summary: Setup a new environment with real-time output streaming
  *     description: |
- *       **Note:** This endpoint uses Server-Sent Events (SSE) which is not supported in Swagger UI.
- *       To test streaming, use curl or Postman:
+ *       **Note:** This endpoint uses Server-Sent Events (SSE) which requires special handling.
+ *       
+ *       To test with curl:
  *       ```bash
  *       curl -N -H "Accept: text/event-stream" \
  *            -H "Content-Type: application/json" \
  *            -d '{"envName": "test-env"}' \
  *            http://localhost:5000/api/environment/setup/stream
  *       ```
- *       For Postman:
+ *       
+ *       To test with Postman:
  *       1. Set method to POST
  *       2. URL: http://localhost:5000/api/environment/setup/stream
- *       3. Headers: Accept: text/event-stream
+ *       3. Headers:
+ *          - Accept: text/event-stream
+ *          - Content-Type: application/json
  *       4. Body (raw/JSON): {"envName": "test-env"}
+ *       5. Disable "Automatically follow redirects" in Settings
  *     requestBody:
  *       required: true
  *       content:

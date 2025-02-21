@@ -11,13 +11,24 @@ const environmentRoutes = require('./routes/environmentRoutes');
 
 const app = express();
 
+// CORS configuration
+const corsOptions = {
+    origin: ['http://localhost:5000', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    credentials: true,
+    exposedHeaders: ['Content-Type'],
+};
+
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Configure Helmet but allow Swagger UI
 app.use(helmet({
     contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Force JSON responses for API routes
@@ -38,7 +49,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/todo-app'
 app.use('/api/todos', todoRoutes);
 app.use('/api/environment', environmentRoutes);
 
-// Swagger documentation route with options
+// Swagger documentation route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     explorer: true,
     customCss: '.swagger-ui .topbar { display: none }',
