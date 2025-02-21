@@ -4,6 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger/swagger');
+const { customStyles, customScript } = require('./swagger/customization');
+const path = require('path');
 require('dotenv').config();
 
 const todoRoutes = require('./routes/todoRoutes');
@@ -37,6 +39,9 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Database connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/todo-app', {
     useNewUrlParser: true,
@@ -52,12 +57,19 @@ app.use('/api/environment', environmentRoutes);
 // Swagger documentation route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     explorer: true,
-    customCss: '.swagger-ui .topbar { display: none }',
+    customCss: `
+        .swagger-ui .topbar { display: none }
+        ${customStyles}
+    `,
+    customJs: '/js/swagger-custom.js',
     swaggerOptions: {
         docExpansion: 'list',
         filter: true,
         showRequestDuration: true,
-    }
+        displayRequestDuration: true,
+    },
+    customSiteTitle: "API Documentation",
+    customfavIcon: "/favicon.ico"
 }));
 
 // Error handling middleware

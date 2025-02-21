@@ -67,36 +67,15 @@ const setupSSE = require('../middleware/sseMiddleware');
  *   post:
  *     summary: Setup a new environment with real-time output streaming
  *     description: |
- *       **Note:** This endpoint uses Server-Sent Events (SSE) which requires special handling.
- *       
- *       To test with curl:
- *       ```bash
- *       curl -N -H "Accept: text/event-stream" \
- *            -H "Content-Type: application/json" \
- *            -d '{"envName": "test-env"}' \
- *            http://localhost:5000/api/environment/setup/stream
- *       ```
- *       
- *       To test with Postman:
- *       1. Set method to POST
- *       2. URL: http://localhost:5000/api/environment/setup/stream
- *       3. Headers:
- *          - Accept: text/event-stream
- *          - Content-Type: application/json
- *       4. Body (raw/JSON): {"envName": "test-env"}
- *       5. Disable "Automatically follow redirects" in Settings
+ *       **Real-time Streaming Output**
+ *       This endpoint streams the environment setup process in real-time.
+ *       The output is displayed in a console-like viewer below.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - envName
- *             properties:
- *               envName:
- *                 type: string
- *                 pattern: ^[a-zA-Z0-9-_]+$
+ *             $ref: '#/components/schemas/EnvironmentSetup'
  *     responses:
  *       200:
  *         description: Stream of setup progress events
@@ -114,6 +93,7 @@ const setupSSE = require('../middleware/sseMiddleware');
  *                   type: string
  *                 timestamp:
  *                   type: string
+ *         x-stream: true
  */
 
 // Setup new environment
@@ -200,8 +180,7 @@ router.post('/setup/stream', [
             res.sse({
                 type: 'error',
                 phase: 'Validation',
-                message: 'Invalid input',
-                errors: errors.array(),
+                message: 'Invalid input: ' + errors.array().map(e => e.msg).join(', '),
                 timestamp: new Date().toISOString()
             });
             return res.end();

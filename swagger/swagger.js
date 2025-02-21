@@ -7,10 +7,6 @@ const options = {
             title: 'Todo API Documentation',
             version: '1.0.0',
             description: 'API documentation for Todo application with environment management',
-            contact: {
-                name: 'API Support',
-                url: 'http://localhost:5000',
-            },
         },
         servers: [
             {
@@ -19,9 +15,24 @@ const options = {
             },
         ],
         components: {
-            schemas: {},
-            securitySchemes: {},
+            schemas: {
+                EnvironmentSetup: {
+                    type: 'object',
+                    required: ['envName'],
+                    properties: {
+                        envName: {
+                            type: 'string',
+                            description: 'Name of the environment to setup',
+                            pattern: '^[a-zA-Z0-9-_]+$'
+                        }
+                    }
+                }
+            }
         },
+        'x-stream-options': {
+            supportedContentTypes: ['text/event-stream'],
+            responseFormat: 'eventStream'
+        }
     },
     apis: ['./routes/*.js'], // Path to the API routes
 };
